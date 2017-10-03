@@ -4,6 +4,9 @@ import scala.math.{Pi, acos, cos, pow, sin}
 import com.sksamuel.scrimage.{Image, Pixel}
 
 import scala.annotation.tailrec
+import scala.concurrent.{Await, Future}
+import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext.Implicits.global
 
 /**
   * 2nd milestone: basic visualization
@@ -98,13 +101,13 @@ object Visualization {
 
     val buffer = new Array[Pixel](360 * 180)
 
-    for (y <- 0 until 180) {
+    val tasks = for {y <- 0 until 180} yield Future {
       for (x <- 0 until 360) {
         val temp = inverseDistanceWeighting(temperatures, Location(90 - y, x - 180), P)
         buffer(y * 360 + x) = colorToPixel(interpolateColor(colorMap, temp))
       }
     }
-
+    Await.result(Future.sequence(tasks), 20.minute)
     Image(360, 180, buffer)
   }
 
