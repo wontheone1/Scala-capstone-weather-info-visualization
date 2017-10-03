@@ -87,6 +87,26 @@ object Visualization {
     interpolateColor2(sortedPoints, value)
   }
 
+  def visualizeGeneric(temperatures: Iterable[(Location, Double)],
+                       width: Int, height: Int, alpha:Int,
+                       colors: Iterable[(Double, Color)],
+                       xyToLocation: (Int, Int) => Location): Image = {
+
+    def colorToPixel(c: Color): Pixel = {
+      Pixel.apply(c.red, c.green, c.blue, alpha)
+    }
+
+    val buffer = new Array[Pixel](width * height)
+    val tasks = for {y <- 0 until height} yield Future {
+      for (x <- 0 until width) {
+        val temp = inverseDistanceWeighting(temperatures, Location(90 - y, x - 180), P)
+        buffer(y * 360 + x) = colorToPixel(interpolateColor(colors, temp))
+      }
+    }
+    Await.result(Future.sequence(tasks), 20.minute)
+
+    Image(width, height, buffer)
+  }
   /**
     * @param temperatures Known temperatures
     * @param colors Color scale
@@ -94,21 +114,7 @@ object Visualization {
     */
   def visualize(temperatures: Iterable[(Location, Double)], colors: Iterable[(Double, Color)]): Image = {
     val colorMap = colors.toList.sortWith(_._1 < _._1)
-
-    def colorToPixel(c: Color): Pixel = {
-      Pixel(c.red, c.green, c.blue, 255)
-    }
-
-    val buffer = new Array[Pixel](360 * 180)
-
-    val tasks = for {y <- 0 until 180} yield Future {
-      for (x <- 0 until 360) {
-        val temp = inverseDistanceWeighting(temperatures, Location(90 - y, x - 180), P)
-        buffer(y * 360 + x) = colorToPixel(interpolateColor(colorMap, temp))
-      }
-    }
-    Await.result(Future.sequence(tasks), 20.minute)
-    Image(360, 180, buffer)
+    visualizeGeneric(temperatures, 360, 180, 255, colorMap, (x: Int, y: Int) => Location(90 - y, x - 180))
   }
 
   val colours: List[(Double, Color)] = List(
