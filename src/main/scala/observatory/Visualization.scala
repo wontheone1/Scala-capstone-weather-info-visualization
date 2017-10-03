@@ -24,7 +24,7 @@ object Visualization {
     * @return The predicted temperature at `location`
     */
   def predictTemperature(temperatures: Iterable[(Location, Double)], location: Location): Double = {
-    ???
+    inverseDistanceWeighting(temperatures, location, P)
   }
 
   def dist(x: Location, xi: Location): Double = {
