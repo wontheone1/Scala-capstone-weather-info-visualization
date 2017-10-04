@@ -14,7 +14,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 object Visualization {
 
   val EARTH_RADIUS = 6371.0
-  val P = 3.0
+  val P = 4.0
   val MIN_ARC_DISTANCE = 1.0
   val TO_RADIANS = Pi / 180.0
 
@@ -61,35 +61,36 @@ object Visualization {
     * @return The color that corresponds to `value`, according to the color scale defined by `points`
     */
   def interpolateColor(points: Iterable[(Double, Color)], value: Double): Color = {
+    val sortedPoints = points.toList.sortWith(_._1 < _._1).toArray
+    interpolateColor(sortedPoints, value)
+  }
 
-    def interpolateColor2(sortedPoints: Array[(Double, Color)], value: Double): Color = {
-      for (i <- 0 until sortedPoints.length - 1) {
-        (sortedPoints(i), sortedPoints(i + 1)) match {
-          case ((v1, Color(r1, g1, b1)), (v2, Color(r2, g2, b2))) => {
-            if (v1 > value)
-              return Color(r1, g1, b1)
-            else if (v2 > value) {
-              val ratio = (value - v1) / (v2 - v1)
-              return Color(
-                math.round(r1 + (r2 - r1) * ratio).toInt,
-                math.round(g1 + (g2 - g1) * ratio).toInt,
-                math.round(b1 + (b2 - b1) * ratio).toInt
-              )
-            }
+  def interpolateColor(sortedPoints: Array[(Double, Color)], value: Double): Color = {
+
+    for (i <- 0 until sortedPoints.length - 1) {
+      (sortedPoints(i), sortedPoints(i + 1)) match {
+        case ((v1, Color(r1, g1, b1)), (v2, Color(r2, g2, b2))) => {
+          if (v1 > value) {
+            return Color(r1, g1, b1)
+          }
+          else if (v2 > value) {
+            val ratio = (value - v1) / (v2 - v1)
+            return Color(
+              math.round(r1 + (r2 - r1) * ratio).toInt,
+              math.round(g1 + (g2 - g1) * ratio).toInt,
+              math.round(b1 + (b2 - b1) * ratio).toInt
+            )
           }
         }
       }
-      // Value is not within the colourmap.  Return maximum color
-      sortedPoints(sortedPoints.length - 1)._2
     }
-
-    val sortedPoints = points.toList.sortWith(_._1 < _._1).toArray
-    interpolateColor2(sortedPoints, value)
+    // Value is not within the colormap.  Return maximum color
+    sortedPoints(sortedPoints.length - 1)._2
   }
 
   def visualizeGeneric(temperatures: Iterable[(Location, Double)],
                        width: Int, height: Int, alpha:Int,
-                       colors: Iterable[(Double, Color)],
+                       colors: Array[(Double, Color)],
                        xyToLocation: (Int, Int) => Location): Image = {
 
     def colorToPixel(c: Color): Pixel = {
@@ -99,8 +100,8 @@ object Visualization {
     val buffer = new Array[Pixel](width * height)
     val tasks = for {y <- 0 until height} yield Future {
       for (x <- 0 until width) {
-        val temp = inverseDistanceWeighting(temperatures, Location(90 - y, x - 180), P)
-        buffer(y * 360 + x) = colorToPixel(interpolateColor(colors, temp))
+        val temp = inverseDistanceWeighting(temperatures, xyToLocation(x, y), P)
+        buffer(y * width + x) = colorToPixel(interpolateColor(colors, temp))
       }
     }
     Await.result(Future.sequence(tasks), 20.minute)
@@ -113,8 +114,7 @@ object Visualization {
     * @return A 360×180 image where each pixel shows the predicted temperature at its location
     */
   def visualize(temperatures: Iterable[(Location, Double)], colors: Iterable[(Double, Color)]): Image = {
-    val colorMap = colors.toList.sortWith(_._1 < _._1)
-    visualizeGeneric(temperatures, 360, 180, 255, colorMap, (x: Int, y: Int) => Location(90 - y, x - 180))
+    visualizeGeneric(temperatures, 360, 180, 255, colors.toList.sortWith(_._1 < _._1).toArray, (x: Int, y: Int) => Location(90 - y, x - 180))
   }
 
   val colours: List[(Double, Color)] = List(

@@ -20,7 +20,7 @@ object Interaction {
     * @return The latitude and longitude of the top-left corner of the tile, as per http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames
     */
   def tileLocation(zoom: Int, x: Int, y: Int): Location = {
-    val n = pow(2.0, zoom + 8)
+    val n = pow(2.0, zoom)
     val lon = ((x.toDouble / n) % 1.0) * 360.0 - 180.0
     val lat = ((atan(sinh(Pi * (1.0 - 2.0 * y / n))).toDegrees + 90) % 180.0) - 90
 
@@ -36,8 +36,8 @@ object Interaction {
     * @return A 256×256 image showing the contents of the tile defined by `x`, `y` and `zooms`
     */
   def tile(temperatures: Iterable[(Location, Double)], colors: Iterable[(Double, Color)], zoom: Int, x: Int, y: Int): Image = {
-    Visualization.visualizeGeneric(temperatures, 256, 256, 127, colors,
-      (x: Int, y: Int) => tileLocation(zoom, (pow(2.0, 8).toInt * x) + x, (pow(2.0, 8).toInt * y) + y))
+    Visualization.visualizeGeneric(temperatures, 256, 256, 127, colors.toList.sortWith(_._1 < _._1).toArray,
+      (x: Int, y: Int) => tileLocation(zoom + 8, (pow(2.0, 8).toInt * x) + x, (pow(2.0, 8).toInt * y) + y))
   }
 
   /**
@@ -51,12 +51,14 @@ object Interaction {
     yearlyData: Iterable[(Int, Data)],
     generateImage: (Int, Int, Int, Int, Data) => Unit
   ): Unit = {
-    for {
+    val tileTasks = for {
       (year, data) <- yearlyData
       zoom <- 0 until 4
       y <- 0 until pow(2.0, zoom).toInt
       x <- 0 until pow(2.0, zoom).toInt
-    } yield generateImage(year, zoom, x, y, data)
+    } yield Future { generateImage(year, zoom, x, y, data) }
+    Await.result(Future.sequence(tileTasks), 20.minute)
+    ()
   }
 
 }
