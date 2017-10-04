@@ -33,7 +33,7 @@ class VisualizationTest extends FunSuite with Checkers {
       List((Location(30, 0), 5.0), (Location(0, 30), 5.0), (Location(-30, 0), 5.0), (Location(0, -30), 5.0))
     val loc = Location(0, 0)
 
-    assert(Visualization.inverseDistanceWeighting(sample, loc, Visualization.P) === 5.0)
+    assert(Visualization.idw(sample, loc, Visualization.P) === 5.0)
   }
 
   test("At point inverse distance weighting") {
@@ -41,7 +41,7 @@ class VisualizationTest extends FunSuite with Checkers {
       List((Location(30, 0), 10.0), (Location(0, 30), 5.0), (Location(-30, 0), 99.0), (Location(0, -30), 20.0))
     val loc = Location(-30, 0)
 
-    assert(Visualization.inverseDistanceWeighting(sample, loc, Visualization.P) === 99.0)
+    assert(Visualization.idw(sample, loc, Visualization.P) === 99.0)
   }
 
   val colourGen = for {

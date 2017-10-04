@@ -24,7 +24,7 @@ object Visualization {
     * @return The predicted temperature at `location`
     */
   def predictTemperature(temperatures: Iterable[(Location, Double)], location: Location): Double = {
-    inverseDistanceWeighting(temperatures, location, P)
+    idw(temperatures, location, P)
   }
 
   def dist(x: Location, xi: Location): Double = {
@@ -34,25 +34,25 @@ object Visualization {
     EARTH_RADIUS * sigma
   }
 
-  def inverseDistanceWeighting(sample: Iterable[(Location, Double)], loc: Location, p: Double) = {
+  def idw(sample: Iterable[(Location, Double)], x: Location, p: Double): Double = {
+
     @tailrec
-    def inverseDistanceWeightingRecursion(values: Iterator[(Location, Double)], sumVals: Double, sumWeights: Double): Double = {
+    def recIdw(values: Iterator[(Location, Double)], sumVals: Double, sumWeights: Double): Double = {
       values.next match {
-        case (location, temperature) => {
-          val arc_distance = dist(loc, location)
+        case (xi, ui) => {
+          val arc_distance = dist(x, xi)
           if (arc_distance < MIN_ARC_DISTANCE)
-            temperature
+            ui
           else {
-            val weight = 1.0 / pow(arc_distance, p)
-            if (values.hasNext)
-              inverseDistanceWeightingRecursion(values, sumVals + weight * temperature, sumWeights + weight)
-            else
-              (sumVals + weight * temperature) / (sumWeights + weight)
+            val w = 1.0 / pow(arc_distance, p)
+            if (values.hasNext) recIdw(values, sumVals + w * ui, sumWeights + w)
+            else (sumVals + w * ui) / (sumWeights + w)
           }
         }
       }
     }
-    inverseDistanceWeightingRecursion(sample.toIterator, 0.0, 0.0)
+
+    recIdw(sample.toIterator, 0.0, 0.0)
   }
 
   /**
@@ -98,13 +98,12 @@ object Visualization {
     }
 
     val buffer = new Array[Pixel](width * height)
-    val tasks = for {y <- 0 until height} yield Future {
+    for (y <- 0 until height) {
       for (x <- 0 until width) {
-        val temp = inverseDistanceWeighting(temperatures, xyToLocation(x, y), P)
+        val temp = idw(temperatures, xyToLocation(x, y), P)
         buffer(y * width + x) = colorToPixel(interpolateColor(colors, temp))
       }
     }
-    Await.result(Future.sequence(tasks), 20.minute)
 
     Image(width, height, buffer)
   }
@@ -116,17 +115,6 @@ object Visualization {
   def visualize(temperatures: Iterable[(Location, Double)], colors: Iterable[(Double, Color)]): Image = {
     visualizeGeneric(temperatures, 360, 180, 255, colors.toList.sortWith(_._1 < _._1).toArray, (x: Int, y: Int) => Location(90 - y, x - 180))
   }
-
-  val colours: List[(Double, Color)] = List(
-    (60.0, Color(255, 255, 255)),
-    (32.0, Color(255, 0, 0)),
-    (12.0, Color(255, 255, 0)),
-    (0.0, Color(0, 255, 255)),
-    (-15.0, Color(0, 0, 255)),
-    (-27.0, Color(255, 0, 255)),
-    (-50.0, Color(33, 0, 107)),
-    (-60.0, Color(0, 0, 0))
-  )
 
 }
 

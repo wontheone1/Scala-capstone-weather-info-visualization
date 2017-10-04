@@ -35,9 +35,9 @@ object Interaction {
     * @param y Y coordinate
     * @return A 256×256 image showing the contents of the tile defined by `x`, `y` and `zooms`
     */
-  def tile(temperatures: Iterable[(Location, Double)], colors: Iterable[(Double, Color)], zoom: Int, x: Int, y: Int): Image = {
+  def tile(temperatures: Iterable[(Location, Double)], colors: Iterable[(Double, Color)], zoom: Int, x1: Int, y1: Int): Image = {
     Visualization.visualizeGeneric(temperatures, 256, 256, 127, colors.toList.sortWith(_._1 < _._1).toArray,
-      (x: Int, y: Int) => tileLocation(zoom + 8, (pow(2.0, 8).toInt * x) + x, (pow(2.0, 8).toInt * y) + y))
+      (x2: Int, y2: Int) => tileLocation(zoom + 8, (pow(2.0, 8).toInt * x1) + x2, (pow(2.0, 8).toInt * y1) + y2))
   }
 
   /**
