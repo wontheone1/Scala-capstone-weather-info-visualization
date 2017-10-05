@@ -87,20 +87,20 @@ object Visualization {
     interpolateColor2(sortedPoints, value)
   }
 
+  def colorToPixel(c: Color, alpha: Int): Pixel = {
+    Pixel.apply(c.red, c.green, c.blue, alpha)
+  }
+
   def visualizeGeneric(temperatures: Iterable[(Location, Double)],
                        width: Int, height: Int, alpha:Int,
                        colors: Iterable[(Double, Color)],
                        xyToLocation: (Int, Int) => Location): Image = {
 
-    def colorToPixel(c: Color): Pixel = {
-      Pixel.apply(c.red, c.green, c.blue, alpha)
-    }
-
     val buffer = new Array[Pixel](width * height)
     val tasks = for {y <- 0 until height} yield Future {
       for (x <- 0 until width) {
         val temp = inverseDistanceWeighting(temperatures, xyToLocation(x, y), P)
-        buffer(y * width + x) = colorToPixel(interpolateColor(colors, temp))
+        buffer(y * width + x) = colorToPixel(interpolateColor(colors, temp), alpha)
       }
     }
     Await.result(Future.sequence(tasks), 20.minute)

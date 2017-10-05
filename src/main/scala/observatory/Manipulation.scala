@@ -13,8 +13,8 @@ object Manipulation {
   def makeGrid(temperatures: Iterable[(Location, Double)]): (Int, Int) => Double = {
     val grid: Map[Location, Double] = {
       for {
-        lat <- -89 to 90
-        lon <- -180 to 179
+        lat <- -90 to 90
+        lon <- -180 to 180
       } yield Location(lat, lon) -> Visualization.predictTemperature(temperatures, Location(lat, lon))
     }.toMap
 
@@ -31,8 +31,8 @@ object Manipulation {
 
     val grid: Map[Location, Double] = {
       for {
-        lat <- -89 to 90
-        lon <- -180 to 179
+        lat <- -90 to 90
+        lon <- -180 to 180
       } yield Location(lat, lon) -> grids.map(grid => grid(lat, lon)).sum / grids.size
     }.toMap
 
@@ -48,7 +48,6 @@ object Manipulation {
     val grid = makeGrid(temperatures)
     (lat, lon) => grid(lat, lon) - normals(lat, lon)
   }
-
 
 }
 
