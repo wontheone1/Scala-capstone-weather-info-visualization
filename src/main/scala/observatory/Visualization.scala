@@ -116,16 +116,5 @@ object Visualization {
     visualizeGeneric(temperatures, 360, 180, 255, colors, (x: Int, y: Int) => Location(90 - y, x - 180))
   }
 
-  val colours: List[(Double, Color)] = List(
-    (60.0, Color(255, 255, 255)),
-    (32.0, Color(255, 0, 0)),
-    (12.0, Color(255, 255, 0)),
-    (0.0, Color(0, 255, 255)),
-    (-15.0, Color(0, 0, 255)),
-    (-27.0, Color(255, 0, 255)),
-    (-50.0, Color(33, 0, 107)),
-    (-60.0, Color(0, 0, 0))
-  )
-
 }
 
